@@ -19,20 +19,19 @@ const uint8_t CommandMode = 0xFF;   // Символ перевода парсе�
 
 enum Command {
     // Неизвестная команда
-    Unknown2E               = 0x2E,          // Неизвестная команда ('.')
-    UnknownE8               = 0xE8,          // Неизвестная команда ('?')
-    TextDecorationUnderline = 0x5F,          // Включение подчеркивания ('_')
-    // Команда выбора шрифта
-    SelectFont0             = 0x30,
-    SelectFont1             = 0x31,
-    SelectFont2             = 0x32,
-    SelectFont3             = 0x33,
-    SelectFont4             = 0x34,
-    SelectFont5             = 0x35,
-    SelectFont6             = 0x36,
-    SelectFont7             = 0x37,
-    SelectFont8             = 0x38,
-    SelectFont9             = 0x39,
+    Unknown2E               = 0x2E,          // 
+    SetLineSpacing          = 0xE8,          // "Шаг" - межстрочный интервал
+    TextDecorationUnderline = 0x5F,          // 
+    SelectFont0             = 0x30,          // 
+    SelectFont1             = 0x31,          // 
+    SelectFont2             = 0x32,          // 
+    SelectFont3             = 0x33,          // 
+    SelectFont4             = 0x34,          // 
+    SelectFont5             = 0x35,          // 
+    SelectFont6             = 0x36,          // 
+    SelectFont7             = 0x37,          // 
+    SelectFont8             = 0x38,          // 
+    SelectFont9             = 0x39,          // 
 };
 
 class LexiconDocumentParser {
@@ -48,14 +47,18 @@ protected:
     void processByte(uint8_t ch);
     void setState(ParserState state);
     void updatePosition(uint8_t ch);
+protected:
+    bool parsePadding(uint8_t ch);             // Разбор управляющей команды "Шаг"
 private:
     std::shared_ptr<LexiconDocument> m_doc;    // Выходной документ
     ParserState m_state;                       // Состояние парсера
     wxMemoryBuffer m_buffer;                   // Строковый кеш
     wxMemoryBuffer m_data;                     // Все данные
+    wxString m_padding;                        // Аргумент команды «Шаг» (например "1.0")
     uint8_t m_font_index;                      // Текущий шрифт
     uint32_t m_col;                            // Строка
     uint32_t m_row;                            // Столбец
+    bool m_swallowLF;                          // Поглотить LF, завершающий строку команды
 };
 
 #endif // LEXICON_DOCUMENT_H

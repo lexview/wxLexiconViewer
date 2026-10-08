@@ -7,6 +7,7 @@ LexiconDocumentParser::LexiconDocumentParser() {
     m_col = 0;
     m_row = 0;
     m_font_index = 0;
+    m_swallowLF = false;
 }
 
 LexiconDocumentParser::~LexiconDocumentParser() {
@@ -19,6 +20,50 @@ void LexiconDocumentParser::updatePosition(uint8_t ch) {
     } else {
         m_row++;
     }
+}
+
+/**
+ * Разбор аргумента команды «Шаг» (межстрочный интервал).
+ *
+ * Формат в файле: FF E8 <десятичное число> CR LF,
+ * например FF E8 "1.0" 0D 0A. Число задаётся в интервалах
+ * с точностью до десятой доли (1.0 = одинарный, 1.2 = 120 %).
+ *
+ * @return true, если байт поглощён командой; false — если команда
+ *         уже завершена, а байт надо обработать как обычный текст.
+ */
+bool LexiconDocumentParser::parsePadding(uint8_t ch) {
+
+    // Накапливаем аргумент: цифры и десятичную точку
+    if ((ch >= '0' && ch <= '9') || ch == '.') {
+        m_padding += static_cast<char>(ch);
+        return true;
+    }
+
+    // Аргумент закончился — применяем межстрочный шаг
+    double factor = 1.0;
+    if (m_padding.IsEmpty() || !m_padding.ToDouble(&factor) || (factor <= 0.0)) {
+        wxLogWarning(wxT("Некорректный аргумент команды 'Шаг': '%s'"), m_padding);
+        factor = 1.0;
+    }
+    wxLogDebug(wxT("Команда устанавки межстрочного интервала: factor = %g"), factor);
+// TODO -    m_doc->SetLineSpacing(static_cast<float>(factor));
+    m_padding.Clear();
+
+    setState(ParserText);
+
+    // Строку-директиву не превращаем в пустую строку документа.
+    // CR -> поглощаем, LF завершаем отдельно; LF -> поглощаем сразу.
+    if (ch == '\r') {
+        m_swallowLF = true;
+        return true;
+    }
+    if (ch == '\n') {
+        return true;
+    }
+
+    // Команда встретилась в середине строки — байт обрабатываем как текст
+    return false;
 }
 
 void LexiconDocumentParser::processByte(uint8_t ch) {
@@ -100,9 +145,10 @@ void LexiconDocumentParser::processByte(uint8_t ch) {
             setState(ParserText);
             return;
         }
-        if (ch == UnknownE8) {
+        if (ch == SetLineSpacing) {
             storeText();
-            setState(ParserText);
+            m_padding.Clear();
+            setState(ParserPadding);
             return;
         }
         // Предцпреждение о неподдерживаемой команде
@@ -133,6 +179,9 @@ void LexiconDocumentParser::processByte(uint8_t ch) {
     }
 
     if (m_state == ParserPadding) {
+        if (parsePadding(ch)) {
+            return;
+        }
     }
 
 }

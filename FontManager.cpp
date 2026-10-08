@@ -101,6 +101,9 @@ void FontManager::RegisterFont(uint8_t indexFont, const void* bytesFont) {
     // Отменяем выбор bitmap (важный шаг!)
     memDC.SelectObject(wxNullBitmap);
 
+    // Белый фон делаем прозрачным, чтобы подложка документа просвечивала
+    bitmap.SetMask(new wxMask(bitmap, *wxWHITE));
+
     // Отладка (сохраняем шрифт в файл)
 //    wxString debugName = wxString::Format("Font%u.png", indexFont);
 //    bitmap.SaveFile(debugName, wxBITMAP_TYPE_PNG);
