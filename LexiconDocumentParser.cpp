@@ -8,6 +8,7 @@ LexiconDocumentParser::LexiconDocumentParser() {
     m_row = 0;
     m_font_index = 0;
     m_swallowLF = false;
+    m_underline = false;
 }
 
 LexiconDocumentParser::~LexiconDocumentParser() {
@@ -64,6 +65,10 @@ bool LexiconDocumentParser::parsePadding(uint8_t ch) {
 
     // Команда встретилась в середине строки — байт обрабатываем как текст
     return false;
+}
+
+void LexiconDocumentParser::setUnderline(bool underline) {
+    m_underline = underline;
 }
 
 void LexiconDocumentParser::processByte(uint8_t ch) {
@@ -133,18 +138,20 @@ void LexiconDocumentParser::processByte(uint8_t ch) {
             setState(ParserText);
             return;
         }
-        // Включение подчеркивания
-        if (ch == TextDecorationUnderline) {
+        /* Включение/выключение подчеркивания */
+        if (ch == UnderlineStart) {
             storeText();
             setState(ParserText);
+            setUnderline(true);
             return;
         }
-        // Неизвестная команда
-        if (ch == Unknown2E) {
+        if (ch == UnderlineEnd) {
             storeText();
             setState(ParserText);
+            setUnderline(false);
             return;
         }
+        /* Межстрочный интервал */
         if (ch == SetLineSpacing) {
             storeText();
             m_padding.Clear();

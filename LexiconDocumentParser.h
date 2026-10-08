@@ -19,19 +19,19 @@ const uint8_t CommandMode = 0xFF;   // Символ перевода парсе�
 
 enum Command {
     // Неизвестная команда
-    Unknown2E               = 0x2E,          // 
+    UnderlineStart          = 0x5F,          // Включаем подчеркивание
+    UnderlineEnd            = 0x2E,          // Выключаем подчеркивание
     SetLineSpacing          = 0xE8,          // "Шаг" - межстрочный интервал
-    TextDecorationUnderline = 0x5F,          // 
-    SelectFont0             = 0x30,          // 
-    SelectFont1             = 0x31,          // 
-    SelectFont2             = 0x32,          // 
-    SelectFont3             = 0x33,          // 
-    SelectFont4             = 0x34,          // 
-    SelectFont5             = 0x35,          // 
-    SelectFont6             = 0x36,          // 
-    SelectFont7             = 0x37,          // 
-    SelectFont8             = 0x38,          // 
-    SelectFont9             = 0x39,          // 
+    SelectFont0             = 0x30,          // Шрифт 0
+    SelectFont1             = 0x31,          // Шрифт 1
+    SelectFont2             = 0x32,          // Шрифт 2
+    SelectFont3             = 0x33,          // Шрифт 3
+    SelectFont4             = 0x34,          // Шрифт 4
+    SelectFont5             = 0x35,          // Шрифт 5
+    SelectFont6             = 0x36,          // Шрифт 6
+    SelectFont7             = 0x37,          // Шрифт 7
+    SelectFont8             = 0x38,          // Шрифт 8
+    SelectFont9             = 0x39,          // Шрифт 9
 };
 
 class LexiconDocumentParser {
@@ -47,6 +47,7 @@ protected:
     void processByte(uint8_t ch);
     void setState(ParserState state);
     void updatePosition(uint8_t ch);
+    void setUnderline(bool underline);
 protected:
     bool parsePadding(uint8_t ch);             // Разбор управляющей команды "Шаг"
 private:
@@ -59,6 +60,7 @@ private:
     uint32_t m_col;                            // Строка
     uint32_t m_row;                            // Столбец
     bool m_swallowLF;                          // Поглотить LF, завершающий строку команды
+    bool m_underline;                          // Подчеркивание
 };
 
 #endif // LEXICON_DOCUMENT_H
