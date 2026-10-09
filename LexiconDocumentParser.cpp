@@ -1,6 +1,9 @@
 
 #include "LexiconDocumentParser.h"
 
+#define CR  0x0D // \r
+#define LF  0x0A // \n
+
 LexiconDocumentParser::LexiconDocumentParser() {
     m_doc = std::make_shared<LexiconDocument>();
     m_state = ParserText;
@@ -15,7 +18,7 @@ LexiconDocumentParser::~LexiconDocumentParser() {
 }
 
 void LexiconDocumentParser::updatePosition(uint8_t ch) {
-    if (ch == '\n') {
+    if (ch == LF) {
         m_col++;
         m_row = 0;
     } else {
@@ -46,6 +49,7 @@ bool LexiconDocumentParser::parsePadding(uint8_t ch) {
     if (m_padding.IsEmpty() || !m_padding.ToDouble(&factor) || (factor <= 0.0)) {
         wxLogWarning(wxT("Некорректный аргумент команды 'Шаг': '%s'"), m_padding);
         factor = 1.0;
+        // TODO - ну получили ошибку и что дальше? Хорошо бы сменить состояние...
     }
     wxLogDebug(wxT("Команда устанавки межстрочного интервала: factor = %g"), factor);
 // TODO -    m_doc->SetLineSpacing(static_cast<float>(factor));
@@ -53,13 +57,7 @@ bool LexiconDocumentParser::parsePadding(uint8_t ch) {
 
     setState(ParserText);
 
-    // Строку-директиву не превращаем в пустую строку документа.
-    // CR -> поглощаем, LF завершаем отдельно; LF -> поглощаем сразу.
-    if (ch == '\r') {
-        m_swallowLF = true;
-        return true;
-    }
-    if (ch == '\n') {
+    if (ch == LF) {
         return true;
     }
 
@@ -73,7 +71,13 @@ void LexiconDocumentParser::setUnderline(bool underline) {
 
 void LexiconDocumentParser::processByte(uint8_t ch) {
 
-    wxLogDebug(wxT("[%u:%u] Получен код 0x%02X (состояние = 0x%02X)"), m_col, m_row, ch, m_state);
+    // Borland C++ 1991 года игнорирует CR символ
+    if (ch == CR) {
+        return;
+    }
+
+    // Фиксируем отладочное событие
+    wxLogDebug(wxT("Получен симпол: col = %u, row = %u, ch = 0x%02X, state = 0x%02X"), m_col, m_row, ch, m_state);
 
     // Ообновляем позицию в файле
     updatePosition(ch);
@@ -162,21 +166,16 @@ void LexiconDocumentParser::processByte(uint8_t ch) {
         wxLogWarning(wxT("Неподдерживаемая команда - 0x%02X"), ch);
     }
 
-
     if (m_state == ParserText) {
         if (ch == CommandMode) {
             setState(ParserCommand);
             return;
         }
-        if (ch == '\r') {
-            // TODO: игнорируем команду возврата каретки (CR).
-            return;
-        }
-        if (ch == '\n') {
-            // Обрабатываем операцию перевод строки (LF).
+        if (ch == LF) {
             storeText();
             storeLine();
             setFont(0);
+            setUnderline(false);
             return;
         }
         m_buffer.AppendByte(ch);
